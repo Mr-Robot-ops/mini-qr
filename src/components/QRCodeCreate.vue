@@ -86,6 +86,28 @@ const height = ref()
 const margin = ref()
 const imageMargin = ref()
 
+const getNumber = (value: unknown) => {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed === '') return NaN
+    return Number(trimmed)
+  }
+  return NaN
+}
+
+const getPositiveNumber = (value: unknown, fallback: number) => {
+  const parsed = getNumber(value)
+  return Number.isFinite(parsed) && parsed > 0 ? (parsed as number) : fallback
+}
+
+const getNonNegativeNumber = (value: unknown, fallback = 0) => {
+  const parsed = getNumber(value)
+  return Number.isFinite(parsed) && parsed >= 0 ? (parsed as number) : fallback
+}
+
+const PREVIEW_QRCODE_DIM_UNIT = 200
+
 watch(
   () => props.initialData,
   (newValue) => {
@@ -125,6 +147,12 @@ const dotsOptions = computed(() => ({
   color: dotsOptionsColor.value,
   type: dotsOptionsType.value
 }))
+
+const sanitizedWidth = computed(() => getPositiveNumber(width.value, PREVIEW_QRCODE_DIM_UNIT))
+const sanitizedHeight = computed(() => getPositiveNumber(height.value, PREVIEW_QRCODE_DIM_UNIT))
+const sanitizedMargin = computed(() => getNonNegativeNumber(margin.value))
+const sanitizedImageMargin = computed(() => getNonNegativeNumber(imageMargin.value))
+
 const cornersSquareOptions = computed(() => ({
   color: cornersSquareOptionsColor.value,
   type: cornersSquareOptionsType.value
@@ -138,23 +166,51 @@ const style = computed(() => ({
   background: styleBackground.value
 }))
 const imageOptions = computed(() => ({
-  margin: imageMargin.value
+  margin: sanitizedImageMargin.value
 }))
 const qrOptions = computed(() => ({
   errorCorrectionLevel: errorCorrectionLevel.value
 }))
 
+const previewScaleX = computed(() =>
+  sanitizedWidth.value > 0 ? PREVIEW_QRCODE_DIM_UNIT / sanitizedWidth.value : 1
+)
+const previewScaleY = computed(() =>
+  sanitizedHeight.value > 0 ? PREVIEW_QRCODE_DIM_UNIT / sanitizedHeight.value : 1
+)
+const previewMarginX = computed(() => sanitizedMargin.value * previewScaleX.value)
+const previewMarginY = computed(() => sanitizedMargin.value * previewScaleY.value)
+const previewImageMargin = computed(
+  () => sanitizedImageMargin.value * Math.min(previewScaleX.value, previewScaleY.value)
+)
+const previewQrWidth = computed(() =>
+  Math.max(PREVIEW_QRCODE_DIM_UNIT - previewMarginX.value * 2, 1)
+)
+const previewQrHeight = computed(() =>
+  Math.max(PREVIEW_QRCODE_DIM_UNIT - previewMarginY.value * 2, 1)
+)
 const qrCodeProps = computed<StyledQRCodeProps>(() => ({
   data: debouncedData.value || defaultQRCodeText.value,
   image: image.value,
-  width: width.value,
-  height: height.value,
-  margin: margin.value,
+  width: sanitizedWidth.value,
+  height: sanitizedHeight.value,
+  margin: sanitizedMargin.value,
   dotsOptions: dotsOptions.value,
   cornersSquareOptions: cornersSquareOptions.value,
   cornersDotOptions: cornersDotOptions.value,
   imageOptions: imageOptions.value,
   qrOptions: qrOptions.value
+}))
+
+const previewQrCodeProps = computed(() => ({
+  ...qrCodeProps.value,
+  width: previewQrWidth.value,
+  height: previewQrHeight.value,
+  margin: 0,
+  imageOptions: {
+    ...qrCodeProps.value.imageOptions,
+    margin: previewImageMargin.value
+  }
 }))
 
 function randomizeStyleSettings() {
@@ -418,8 +474,6 @@ const isExportButtonDisabled = computed(() => {
   return dataStringsFromCsv.value.length === 0
 })
 
-const PREVIEW_QRCODE_DIM_UNIT = 200
-
 /**
  * Calculates the dimensions for QR code export
  * When frame is enabled (showFrame = true), dimensions are calculated from the actual rendered element
@@ -428,20 +482,20 @@ const PREVIEW_QRCODE_DIM_UNIT = 200
 function getExportDimensions() {
   if (!showFrame.value) {
     return {
-      width: width.value,
-      height: height.value
+      width: sanitizedWidth.value,
+      height: sanitizedHeight.value
     }
   }
   const el = document.getElementById('element-to-export')
   if (!el) {
     return {
-      width: width.value,
-      height: height.value
+      width: sanitizedWidth.value,
+      height: sanitizedHeight.value
     }
   }
 
   // Calculate the scale factor based on the preview size
-  const scaleFactor = width.value / PREVIEW_QRCODE_DIM_UNIT
+  const scaleFactor = sanitizedWidth.value / PREVIEW_QRCODE_DIM_UNIT
 
   const elWidth = el.offsetWidth
   const elHeight = el.offsetHeight
@@ -959,10 +1013,8 @@ const mainDivPaddingStyle = computed(() => {
                     >
                       <StyledQRCode
                         v-bind="{
-                          ...qrCodeProps,
-                          data: data?.length > 0 ? data : defaultQRCodeText.value,
-                          width: PREVIEW_QRCODE_DIM_UNIT,
-                          height: PREVIEW_QRCODE_DIM_UNIT
+                          ...previewQrCodeProps,
+                          data: data?.length > 0 ? data : defaultQRCodeText.value
                         }"
                         role="img"
                         aria-label="QR code"
@@ -985,10 +1037,8 @@ const mainDivPaddingStyle = computed(() => {
                   >
                     <StyledQRCode
                       v-bind="{
-                        ...qrCodeProps,
-                        data: data?.length > 0 ? data : defaultQRCodeText.value,
-                        width: PREVIEW_QRCODE_DIM_UNIT,
-                        height: PREVIEW_QRCODE_DIM_UNIT
+                        ...previewQrCodeProps,
+                        data: data?.length > 0 ? data : defaultQRCodeText.value
                       }"
                       role="img"
                       aria-label="QR code preview"
@@ -1061,10 +1111,8 @@ const mainDivPaddingStyle = computed(() => {
                   >
                     <StyledQRCode
                       v-bind="{
-                        ...qrCodeProps,
-                        data: data?.length > 0 ? data : defaultQRCodeText.value,
-                        width: PREVIEW_QRCODE_DIM_UNIT,
-                        height: PREVIEW_QRCODE_DIM_UNIT
+                        ...previewQrCodeProps,
+                        data: data?.length > 0 ? data : defaultQRCodeText.value
                       }"
                       role="img"
                       aria-label="QR code"
@@ -1088,10 +1136,8 @@ const mainDivPaddingStyle = computed(() => {
           >
             <StyledQRCode
               v-bind="{
-                ...qrCodeProps,
-                data: data?.length > 0 ? data : t('Have nice day!'),
-                width: PREVIEW_QRCODE_DIM_UNIT,
-                height: PREVIEW_QRCODE_DIM_UNIT
+                ...previewQrCodeProps,
+                data: data?.length > 0 ? data : t('Have nice day!')
               }"
               role="img"
               aria-label="QR code"
