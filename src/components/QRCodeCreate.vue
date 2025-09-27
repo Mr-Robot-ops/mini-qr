@@ -81,10 +81,10 @@ watch(
   { immediate: true }
 )
 const image = ref()
-const width = ref()
-const height = ref()
-const margin = ref()
-const imageMargin = ref()
+const width = ref<number>()
+const height = ref<number>()
+const margin = ref<number>()
+const imageMargin = ref<number>()
 
 watch(
   () => props.initialData,
@@ -101,7 +101,7 @@ const cornersSquareOptionsColor = ref()
 const cornersSquareOptionsType = ref()
 const cornersDotOptionsColor = ref()
 const cornersDotOptionsType = ref()
-const styleBorderRadius = ref()
+const styleBorderRadius = ref<number>()
 const styledBorderRadiusFormatted = computed(() => `${styleBorderRadius.value}px`)
 const styleBackground = ref(defaultPreset.style.background)
 const lastBackground = ref(defaultPreset.style.background)
@@ -1756,7 +1756,7 @@ const mainDivPaddingStyle = computed(() => {
                     id="width"
                     type="number"
                     placeholder="width in pixels"
-                    v-model="width"
+                    v-model.number="width"
                   />
                 </div>
                 <div class="w-full sm:w-1/3">
@@ -1768,7 +1768,7 @@ const mainDivPaddingStyle = computed(() => {
                     id="height"
                     type="number"
                     placeholder="height in pixels"
-                    v-model="height"
+                    v-model.number="height"
                   />
                 </div>
                 <div class="w-full sm:w-1/3">
@@ -1780,7 +1780,7 @@ const mainDivPaddingStyle = computed(() => {
                     id="border-radius"
                     type="number"
                     placeholder="24"
-                    v-model="styleBorderRadius"
+                    v-model.number="styleBorderRadius"
                   />
                 </div>
               </div>
@@ -1794,7 +1794,7 @@ const mainDivPaddingStyle = computed(() => {
                     id="margin"
                     type="number"
                     placeholder="0"
-                    v-model="margin"
+                    v-model.number="margin"
                   />
                 </div>
                 <div class="w-full sm:w-1/2">
@@ -1806,7 +1806,7 @@ const mainDivPaddingStyle = computed(() => {
                     id="image-margin"
                     type="number"
                     placeholder="0"
-                    v-model="imageMargin"
+                    v-model.number="imageMargin"
                   />
                 </div>
               </div>
