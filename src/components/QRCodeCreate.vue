@@ -133,7 +133,8 @@ const sanitizedImageMargin = computed(() => toSafeNumber(imageMargin.value, 0))
 
 const dotsOptions = computed(() => ({
   color: dotsOptionsColor.value,
-  type: dotsOptionsType.value
+  type: dotsOptionsType.value,
+  roundSize: false
 }))
 const cornersSquareOptions = computed(() => ({
   color: cornersSquareOptionsColor.value,
