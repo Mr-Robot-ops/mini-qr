@@ -121,6 +121,16 @@ watch(
   }
 )
 
+function toSafeNumber(value: unknown, fallback: number) {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const sanitizedWidth = computed(() => toSafeNumber(width.value, defaultPreset.width))
+const sanitizedHeight = computed(() => toSafeNumber(height.value, defaultPreset.height))
+const sanitizedMargin = computed(() => toSafeNumber(margin.value, 0))
+const sanitizedImageMargin = computed(() => toSafeNumber(imageMargin.value, 0))
+
 const dotsOptions = computed(() => ({
   color: dotsOptionsColor.value,
   type: dotsOptionsType.value
@@ -138,7 +148,7 @@ const style = computed(() => ({
   background: styleBackground.value
 }))
 const imageOptions = computed(() => ({
-  margin: imageMargin.value
+  margin: sanitizedImageMargin.value
 }))
 const qrOptions = computed(() => ({
   errorCorrectionLevel: errorCorrectionLevel.value
@@ -147,9 +157,9 @@ const qrOptions = computed(() => ({
 const qrCodeProps = computed<StyledQRCodeProps>(() => ({
   data: debouncedData.value || defaultQRCodeText.value,
   image: image.value,
-  width: width.value,
-  height: height.value,
-  margin: margin.value,
+  width: sanitizedWidth.value,
+  height: sanitizedHeight.value,
+  margin: sanitizedMargin.value,
   dotsOptions: dotsOptions.value,
   cornersSquareOptions: cornersSquareOptions.value,
   cornersDotOptions: cornersDotOptions.value,
