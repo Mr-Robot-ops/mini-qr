@@ -1021,6 +1021,69 @@ function stripUnsupportedForLegacy(svgDocument: Document) {
   walk(svgElement, new Map())
 }
 
+function normalizeSvgViewBox(svgDocument: Document, fallbackWidth: number, fallbackHeight: number) {
+  const svgElement = svgDocument.documentElement
+  if (!svgElement) {
+    return
+  }
+
+  const viewBoxAttr = svgElement.getAttribute('viewBox')
+  if (!viewBoxAttr) {
+    svgElement.setAttribute(
+      'viewBox',
+      `0 0 ${formatSvgNumber(fallbackWidth)} ${formatSvgNumber(fallbackHeight)}`
+    )
+    return
+  }
+
+  const parts = viewBoxAttr
+    .split(/[\s,]+/)
+    .map((value) => parseFloat(value))
+    .filter((value) => Number.isFinite(value))
+
+  if (parts.length < 4) {
+    svgElement.setAttribute(
+      'viewBox',
+      `0 0 ${formatSvgNumber(fallbackWidth)} ${formatSvgNumber(fallbackHeight)}`
+    )
+    return
+  }
+
+  const [minX, minY, width, height] = parts as [number, number, number, number]
+  const translateX = Number.isFinite(minX) ? -minX : 0
+  const translateY = Number.isFinite(minY) ? -minY : 0
+
+  if (translateX !== 0 || translateY !== 0) {
+    const translationGroup = svgDocument.createElementNS(svgElement.namespaceURI, 'g')
+    translationGroup.setAttribute(
+      'transform',
+      `translate(${formatSvgNumber(translateX)} ${formatSvgNumber(translateY)})`
+    )
+
+    const childNodes: ChildNode[] = []
+    for (const child of Array.from(svgElement.childNodes)) {
+      if (child === translationGroup) {
+        continue
+      }
+      childNodes.push(child)
+    }
+
+    for (const child of childNodes) {
+      translationGroup.appendChild(child)
+    }
+
+    svgElement.appendChild(translationGroup)
+  }
+
+  const viewBoxWidth = Number.isFinite(width) && width > 0 ? width : fallbackWidth
+  const viewBoxHeight = Number.isFinite(height) && height > 0 ? height : fallbackHeight
+
+  svgElement.setAttribute(
+    'viewBox',
+    `0 0 ${formatSvgNumber(viewBoxWidth)} ${formatSvgNumber(viewBoxHeight)}`
+  )
+}
+
 function applyStrictRootSize(svgDocument: Document, width: number, height: number) {
   const svgElement = svgDocument.documentElement
   if (!svgElement) {
@@ -1036,17 +1099,10 @@ function applyStrictRootSize(svgDocument: Document, width: number, height: numbe
   const widthPx = Math.max(1, Math.round(resolvedWidth))
   const heightPx = Math.max(1, Math.round(resolvedHeight))
 
+  normalizeSvgViewBox(svgDocument, widthPx, heightPx)
+
   svgElement.setAttribute('width', `${widthPx}px`)
   svgElement.setAttribute('height', `${heightPx}px`)
-
-  const viewBoxAttr = svgElement.getAttribute('viewBox')
-  if (!viewBoxAttr || !viewBoxAttr.trim()) {
-    svgElement.setAttribute(
-      'viewBox',
-      `0 0 ${formatSvgNumber(widthPx)} ${formatSvgNumber(heightPx)}`
-    )
-  }
-
   svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
 }
 
