@@ -455,6 +455,38 @@ const blobToDataURL = (blob: Blob): Promise<string> =>
     reader.readAsDataURL(blob)
   })
 
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
+    let binary = ''
+    const bytes = new Uint8Array(buffer)
+    const chunkSize = 0x8000
+
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      const chunk = bytes.subarray(offset, offset + chunkSize)
+      binary += String.fromCharCode(...chunk)
+    }
+
+    return window.btoa(binary)
+  }
+
+  const globalBuffer = (
+    globalThis as unknown as {
+      Buffer?: { from(input: ArrayBuffer | Uint8Array): { toString(encoding: string): string } }
+    }
+  ).Buffer
+
+  if (globalBuffer) {
+    return globalBuffer.from(buffer).toString('base64')
+  }
+
+  throw new Error('No base64 encoder available in this environment')
+}
+
+const blobToBase64 = async (blob: Blob): Promise<string> => {
+  const buffer = await blob.arrayBuffer()
+  return arrayBufferToBase64(buffer)
+}
+
 /**
  * NOTE:
  * PNG pipeline: repaint base raster with real rounded corners on Canvas.
@@ -856,17 +888,21 @@ export async function getLegacySvgString(
     'image/png'
   )
 
-  const dataUrl = await blobToDataURL(blob)
-  const [, base64Payload = ''] = dataUrl.split(',')
-  const cleanedBase64 = base64Payload.replace(/\s+/g, '')
+  const base64Payload = await blobToBase64(blob)
   const svgWidth = Math.max(1, Math.round(width))
   const svgHeight = Math.max(1, Math.round(height))
   const mimeType = blob.type || 'image/png'
 
+  const sizeWidth = `${svgWidth}px`
+  const sizeHeight = `${svgHeight}px`
+
   const svgParts = [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet">`,
-    `  <image width="${svgWidth}" height="${svgHeight}" preserveAspectRatio="none" href="data:${mimeType};base64,${cleanedBase64}" xlink:href="data:${mimeType};base64,${cleanedBase64}" />`,
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${sizeWidth}" height="${sizeHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet">`,
+    '  <defs>',
+    '    <style type="text/css"><![CDATA[image{image-rendering:optimizeSpeed;shape-rendering:crispEdges;}]]></style>',
+    '  </defs>',
+    `  <image x="0" y="0" width="${sizeWidth}" height="${sizeHeight}" preserveAspectRatio="none" image-rendering="optimizeSpeed" xlink:href="data:${mimeType};base64,${base64Payload}"></image>`,
     '</svg>'
   ]
 
