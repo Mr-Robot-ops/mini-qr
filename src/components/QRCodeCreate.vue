@@ -17,9 +17,11 @@ import { createRandomColor, getRandomItemInArray } from '@/utils/color'
 import {
   copyImageToClipboard,
   downloadJpgElement,
+  downloadLegacySvgElement,
   downloadPngElement,
   downloadSvgElement,
   getJpgElement,
+  getLegacySvgString,
   getPngElement,
   getSvgString
 } from '@/utils/convertToImage'
@@ -498,14 +500,15 @@ function copyQRToClipboard() {
 
 /**
  * Downloads QR code in specified format, handling both single and batch exports
- * @param format The format to download: 'png', 'svg', or 'jpg'
+ * @param format The format to download
  */
-function downloadQRImage(format: 'png' | 'svg' | 'jpg') {
+function downloadQRImage(format: ExportFormat) {
   if (exportMode.value === ExportMode.Single) {
     const formatConfig = {
       png: { fn: downloadPngElement, filename: 'qr-code.png' },
       svg: { fn: downloadSvgElement, filename: 'qr-code.svg' },
-      jpg: { fn: downloadJpgElement, filename: 'qr-code.jpg', extraOptions: { bgcolor: 'white' } }
+      jpg: { fn: downloadJpgElement, filename: 'qr-code.jpg', extraOptions: { bgcolor: 'white' } },
+      'legacy-svg': { fn: downloadLegacySvgElement, filename: 'qr-code-legacy.svg' }
     }[format]
 
     const el = document.getElementById('element-to-export')
@@ -670,6 +673,8 @@ enum ExportMode {
   Batch = 'batch'
 }
 
+type ExportFormat = 'png' | 'svg' | 'jpg' | 'legacy-svg'
+
 const exportMode = ref(ExportMode.Single)
 const dataStringsFromCsv = ref<string[]>([])
 const frameTextsFromCsv = ref<string[]>([])
@@ -779,12 +784,7 @@ const onBatchInputFileUpload = (event: Event) => {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const usedFilenames = new Set() // zip folders cannot have duplicate filenames, otherwise they override each other
-const createZipFile = (
-  zip: typeof JSZip,
-  dataUrl: string,
-  index: number,
-  format: 'png' | 'svg' | 'jpg'
-) => {
+const createZipFile = (zip: typeof JSZip, dataUrl: string, index: number, format: ExportFormat) => {
   const dataString = dataStringsFromCsv.value[index]
   const frameText = frameTextsFromCsv.value[index]
   const customFileName = fileNamesFromCsv.value[index]
@@ -801,14 +801,17 @@ const createZipFile = (
   // Sanitize filename to remove invalid characters
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9_-]/g, '_')
 
+  const extension = format === 'legacy-svg' ? 'svg' : format
+  const suffix = format === 'legacy-svg' ? '-legacy' : ''
+
   if (format === 'png' || format === 'jpg') {
-    zip.file(`${sanitizedFileName}.${format}`, dataUrl.split(',')[1], { base64: true })
+    zip.file(`${sanitizedFileName}${suffix}.${extension}`, dataUrl.split(',')[1], { base64: true })
   } else {
     // For SVG, we don't need to split and use base64
-    zip.file(`${sanitizedFileName}.${format}`, dataUrl)
+    zip.file(`${sanitizedFileName}${suffix}.${extension}`, dataUrl)
   }
 }
-async function generateBatchQRCodes(format: 'png' | 'svg' | 'jpg') {
+async function generateBatchQRCodes(format: ExportFormat) {
   isExportingBatchQRs.value = true
   const zip = new JSZip()
   let numQrCodesCreated = 0
@@ -830,6 +833,12 @@ async function generateBatchQRCodes(format: 'png' | 'svg' | 'jpg') {
         dataUrl = await getPngElement(el, getExportDimensions(), styledBorderRadiusFormatted.value)
       } else if (format === 'jpg') {
         dataUrl = await getJpgElement(el, getExportDimensions(), styledBorderRadiusFormatted.value)
+      } else if (format === 'legacy-svg') {
+        dataUrl = await getLegacySvgString(
+          el,
+          getExportDimensions(),
+          styledBorderRadiusFormatted.value
+        )
       } else {
         dataUrl = await getSvgString(el, getExportDimensions(), styledBorderRadiusFormatted.value)
       }
@@ -1264,6 +1273,36 @@ const mainDivPaddingStyle = computed(() => {
                       font-weight="600"
                     >
                       SVG
+                    </text>
+                  </g>
+                </svg>
+              </button>
+              <button
+                id="download-qr-image-button-legacy-svg"
+                class="button"
+                @click="() => downloadQRImage('legacy-svg')"
+                :disabled="isExportButtonDisabled"
+                :title="
+                  isExportButtonDisabled
+                    ? 'Bitte zuerst Daten zum Kodieren eingeben'
+                    : 'Legacy SVG herunterladen (IrfanView optimiert)'
+                "
+                aria-label="Legacy SVG herunterladen (IrfanView optimiert)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                  <g fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                    <path d="M5 12V5a2 2 0 0 1 2-2h7l5 5v4" />
+                    <text
+                      x="1"
+                      y="22"
+                      fill="currentColor"
+                      stroke="none"
+                      font-size="11px"
+                      font-family="monospace"
+                      font-weight="600"
+                    >
+                      LSVG
                     </text>
                   </g>
                 </svg>

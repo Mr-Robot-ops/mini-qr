@@ -3,42 +3,42 @@ import domtoimage, { type Options } from 'dom-to-image'
 import { elementToSVG, inlineResources } from 'dom-to-svg'
 
 /**
-* NOTE:
-* Default export dimensions used as fallback when element metrics are unavailable.
-*/
+ * NOTE:
+ * Default export dimensions used as fallback when element metrics are unavailable.
+ */
 const defaultOptions: Options = {
-width: 400,
-height: 400
+  width: 400,
+  height: 400
 }
 
 /**
-* NOTE:
-* Corner radii structure used across PNG/JPG/SVG pipelines.
-*/
+ * NOTE:
+ * Corner radii structure used across PNG/JPG/SVG pipelines.
+ */
 type CornerRadii = {
-topLeft: number
-topRight: number
-bottomRight: number
-bottomLeft: number
+  topLeft: number
+  topRight: number
+  bottomRight: number
+  bottomLeft: number
 }
 
 const DEFAULT_RADIUS = 48
 
 /**
-* NOTE:
-* Radius helpers for parsing, equality checks and CSS clip-path value building.
-* Keeps values normalized to avoid malformed corners at larger sizes (≥202px).
-*/
+ * NOTE:
+ * Radius helpers for parsing, equality checks and CSS clip-path value building.
+ * Keeps values normalized to avoid malformed corners at larger sizes (≥202px).
+ */
 const areRadiiEqual = (radii: CornerRadii): boolean => {
-const { topLeft, topRight, bottomRight, bottomLeft } = radii
-return topLeft === topRight && topLeft === bottomRight && topLeft === bottomLeft
+  const { topLeft, topRight, bottomRight, bottomLeft } = radii
+  return topLeft === topRight && topLeft === bottomRight && topLeft === bottomLeft
 }
 
 const buildClipPathValue = (radii: CornerRadii): string => {
-const formatted = [radii.topLeft, radii.topRight, radii.bottomRight, radii.bottomLeft].map(
-(value) => formatRadiusValue(value)
-)
-return areRadiiEqual(radii)
+  const formatted = [radii.topLeft, radii.topRight, radii.bottomRight, radii.bottomLeft].map(
+    (value) => formatRadiusValue(value)
+  )
+  return areRadiiEqual(radii)
     ? `inset(0 round ${formatted[0]})`
     : `inset(0 round ${formatted.join(' ')})`
 }
@@ -193,10 +193,10 @@ const getExportPreparation = (
       },
       requestedWidth,
       requestedHeight
-)
+    )
 
-const style: Record<string, string> = {
-...(options.style ? (options.style as Record<string, string>) : {}),
+    const style: Record<string, string> = {
+      ...(options.style ? (options.style as Record<string, string>) : {}),
       transform: `scale(${safeScale})`,
       transformOrigin: 'left top',
       overflow: 'hidden'
@@ -408,31 +408,31 @@ const createRoundedRectPathData = (
       `A ${formatSvgNumber(tr)} ${formatSvgNumber(tr)} 0 0 1 ${formatSvgNumber(offsetX + width)} ${formatSvgNumber(
         offsetY + tr
       )}`
-)
-}
-commands.push(`V ${formatSvgNumber(offsetY + height - br)}`)
+    )
+  }
+  commands.push(`V ${formatSvgNumber(offsetY + height - br)}`)
   if (br > 0) {
     commands.push(
       `A ${formatSvgNumber(br)} ${formatSvgNumber(br)} 0 0 1 ${formatSvgNumber(offsetX + width - br)} ${formatSvgNumber(
         offsetY + height
       )}`
-)
-}
-commands.push(`H ${formatSvgNumber(offsetX + bl)}`)
+    )
+  }
+  commands.push(`H ${formatSvgNumber(offsetX + bl)}`)
   if (bl > 0) {
     commands.push(
       `A ${formatSvgNumber(bl)} ${formatSvgNumber(bl)} 0 0 1 ${formatSvgNumber(offsetX)} ${formatSvgNumber(
         offsetY + height - bl
       )}`
-)
-}
-commands.push(`V ${formatSvgNumber(offsetY + tl)}`)
+    )
+  }
+  commands.push(`V ${formatSvgNumber(offsetY + tl)}`)
   if (tl > 0) {
     commands.push(
       `A ${formatSvgNumber(tl)} ${formatSvgNumber(tl)} 0 0 1 ${formatSvgNumber(offsetX + tl)} ${formatSvgNumber(startY)}`
-)
-}
-commands.push('Z')
+    )
+  }
+  commands.push('Z')
 
   return commands.join(' ')
 }
@@ -503,11 +503,11 @@ const paintBlobWithRoundedCorners = async (
         },
         targetMime,
         quality
-)
-} // end onload
+      )
+    } // end onload
 
-image.onerror = () => {
-URL.revokeObjectURL(image.src)
+    image.onerror = () => {
+      URL.revokeObjectURL(image.src)
       reject(new Error('Failed to load image for rounding'))
     }
 
@@ -536,15 +536,15 @@ const renderRoundedImageBlob = async (
       preparation.width,
       preparation.height,
       outputMimeType ?? baseBlob.type
-)
+    )
 
-return {
-blob: roundedBlob,
-width: preparation.width,
-height: preparation.height
-}
-} catch (error) {
-console.error('Failed to apply rounded corners, falling back to original image.', error)
+    return {
+      blob: roundedBlob,
+      width: preparation.width,
+      height: preparation.height
+    }
+  } catch (error) {
+    console.error('Failed to apply rounded corners, falling back to original image.', error)
     return {
       blob: baseBlob,
       width: preparation.width,
@@ -567,8 +567,7 @@ const getFormattedJpegOptions = (
 ): Options => {
   if (options.width && options.height) {
     const scale = getResizeScaleToFit(element, Number(options.width), Number(options.height)) || 1
-    const radiusValue =
-      borderRadius ? parseInt(borderRadius.replace('px', ''), 10) : DEFAULT_RADIUS
+    const radiusValue = borderRadius ? parseInt(borderRadius.replace('px', ''), 10) : DEFAULT_RADIUS
     const scaledRadius = `${radiusValue / scale}px`
 
     return {
@@ -717,8 +716,8 @@ function applySvgOptions(svgDocument: Document, preparation: ExportPreparation) 
     `${formatSvgNumber(viewBoxX)} ${formatSvgNumber(viewBoxY)} ${formatSvgNumber(
       viewBoxWidth
     )} ${formatSvgNumber(viewBoxHeight)}`
-)
-svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+  )
+  svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
 
   if (options.style) {
     const style = { ...(options.style as Record<string, string>) }
@@ -769,8 +768,8 @@ svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
   path.setAttribute(
     'd',
     createRoundedRectPathData(clipRadii, viewBoxWidth, viewBoxHeight, viewBoxX, viewBoxY)
-)
-clipPath.appendChild(path)
+  )
+  clipPath.appendChild(path)
 
   defs.appendChild(clipPath)
 
@@ -809,6 +808,60 @@ export async function getSvgString(
   return new XMLSerializer().serializeToString(svgDocument)
 }
 
+export async function getLegacySvgString(
+  element: HTMLElement,
+  options: Options,
+  borderRadius?: string
+): Promise<string> {
+  const svgString = await getSvgString(element, options, borderRadius)
+  const doctype =
+    '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">'
+
+  let legacyString = svgString.trim()
+
+  if (!legacyString.startsWith('<?xml')) {
+    legacyString = `<?xml version="1.0" encoding="UTF-8"?>\n${legacyString}`
+  }
+
+  if (!legacyString.toLowerCase().includes('<!doctype svg')) {
+    const xmlDeclarationMatch = legacyString.match(/<\?xml[^>]*\?>/i)
+    if (xmlDeclarationMatch) {
+      legacyString = legacyString.replace(
+        xmlDeclarationMatch[0],
+        `${xmlDeclarationMatch[0]}\n${doctype}`
+      )
+    } else {
+      legacyString = `${doctype}\n${legacyString}`
+    }
+  }
+
+  const svgTagMatch = legacyString.match(/<svg[^>]*>/i)
+  if (svgTagMatch) {
+    let svgTag = svgTagMatch[0]
+    const ensureAttribute = (attribute: string, value: string) => {
+      const regex = new RegExp(`${attribute}=`, 'i')
+      if (!regex.test(svgTag)) {
+        svgTag = svgTag.replace('<svg', `<svg ${attribute}="${value}"`)
+      }
+    }
+
+    ensureAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    ensureAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    ensureAttribute('version', '1.1')
+    ensureAttribute('baseProfile', 'tiny')
+
+    legacyString = legacyString.replace(svgTagMatch[0], svgTag)
+  }
+
+  legacyString = legacyString.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  legacyString = legacyString
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\r\n')
+
+  return legacyString
+}
+
 export async function getSvgElement(
   element: HTMLElement,
   options: Options,
@@ -834,5 +887,26 @@ export function downloadSvgElement(
     })
     .catch((error: Error) => {
       console.error('Error converting element to SVG:', error)
+    })
+}
+
+export function downloadLegacySvgElement(
+  element: HTMLElement,
+  filename: string,
+  options: Options,
+  borderRadius?: string
+) {
+  getLegacySvgString(element, options, borderRadius)
+    .then((svgContent: string) => {
+      const blob = new Blob([svgContent], { type: 'image/svg+xml' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(url)
+    })
+    .catch((error: Error) => {
+      console.error('Error converting element to legacy SVG:', error)
     })
 }
