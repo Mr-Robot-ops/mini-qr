@@ -19,9 +19,11 @@ import {
   downloadJpgElement,
   downloadPngElement,
   downloadSvgElement,
+  downloadLegacySvgElement,
   getJpgElement,
   getPngElement,
-  getSvgString
+  getSvgString,
+  getLegacySvgString
 } from '@/utils/convertToImage'
 import { IS_COPY_IMAGE_TO_CLIPBOARD_SUPPORTED } from '@/utils/clipboard'
 import { parseCSV, validateCSVData } from '@/utils/csv'
@@ -80,9 +82,12 @@ watch(
   },
   { immediate: true }
 )
+const DEFAULT_EXPORT_DIMENSION = 500
+const LEGACY_SVG_DOWNLOAD_LABEL = 'Download QR Code as SVG (Legacy Fallback)'
+
 const image = ref()
-const width = ref()
-const height = ref()
+const width = ref(DEFAULT_EXPORT_DIMENSION)
+const height = ref(DEFAULT_EXPORT_DIMENSION)
 const margin = ref()
 const imageMargin = ref()
 
@@ -211,9 +216,30 @@ const allPresetOptions = computed(() => {
     : allQrCodePresets
   return options.map((preset) => ({ value: preset.name, label: t(preset.name) }))
 })
-const selectedPreset = ref<
-  Preset & { key?: string; qrOptions?: { errorCorrectionLevel: ErrorCorrectionLevel } }
->(defaultPreset)
+type SelectedPreset = Preset & {
+  key?: string
+  qrOptions?: { errorCorrectionLevel: ErrorCorrectionLevel }
+}
+
+function ensureDefaultPresetDimensions(preset: Preset | SelectedPreset): SelectedPreset {
+  if (preset.name !== defaultPreset.name) {
+    return preset as SelectedPreset
+  }
+
+  if (preset.width === DEFAULT_EXPORT_DIMENSION && preset.height === DEFAULT_EXPORT_DIMENSION) {
+    return preset as SelectedPreset
+  }
+
+  return {
+    ...preset,
+    width: DEFAULT_EXPORT_DIMENSION,
+    height: DEFAULT_EXPORT_DIMENSION
+  } as SelectedPreset
+}
+
+const selectedPreset = ref<SelectedPreset>(
+  ensureDefaultPresetDimensions({ ...defaultPreset } as SelectedPreset)
+)
 watch(selectedPreset, () => {
   // Only update data from preset if there's no initialData or if data is empty
   if (!props.initialData || data.value === '') {
@@ -262,13 +288,17 @@ watch(
       CUSTOM_LOADED_PRESET_KEYS.includes(newKey) &&
       lastCustomLoadedPreset.value
     ) {
-      selectedPreset.value = lastCustomLoadedPreset.value
+      if (lastCustomLoadedPreset.value) {
+        selectedPreset.value = ensureDefaultPresetDimensions({
+          ...lastCustomLoadedPreset.value
+        } as SelectedPreset)
+      }
       return
     }
 
     const updatedPreset = allQrCodePresets.find((preset) => preset.name === newKey)
     if (updatedPreset) {
-      selectedPreset.value = updatedPreset
+      selectedPreset.value = ensureDefaultPresetDimensions(updatedPreset)
     }
   },
   { immediate: true }
@@ -498,13 +528,14 @@ function copyQRToClipboard() {
 
 /**
  * Downloads QR code in specified format, handling both single and batch exports
- * @param format The format to download: 'png', 'svg', or 'jpg'
+ * @param format The format to download: 'png', 'svg', 'svg-legacy', or 'jpg'
  */
-function downloadQRImage(format: 'png' | 'svg' | 'jpg') {
+function downloadQRImage(format: 'png' | 'svg' | 'svg-legacy' | 'jpg') {
   if (exportMode.value === ExportMode.Single) {
     const formatConfig = {
       png: { fn: downloadPngElement, filename: 'qr-code.png' },
       svg: { fn: downloadSvgElement, filename: 'qr-code.svg' },
+      'svg-legacy': { fn: downloadLegacySvgElement, filename: 'qr-code-legacy.svg' },
       jpg: { fn: downloadJpgElement, filename: 'qr-code.jpg', extraOptions: { bgcolor: 'white' } }
     }[format]
 
@@ -586,7 +617,7 @@ function loadQRConfig(jsonString: string, key?: string) {
 
   let framePreset: FramePreset | undefined
 
-  selectedPreset.value = preset
+  selectedPreset.value = ensureDefaultPresetDimensions(preset)
 
   if (frameConfig) {
     showFrame.value = true
@@ -648,7 +679,9 @@ onMounted(() => {
       loadQRConfig(qrCodeConfigString, LAST_LOADED_LOCALLY_PRESET_KEY)
     } else {
       // No localStorage data found, use the environment variable default preset
-      selectedPreset.value = { ...defaultPreset }
+      selectedPreset.value = ensureDefaultPresetDimensions({
+        ...defaultPreset
+      } as SelectedPreset)
       selectedPresetKey.value = defaultPreset.name
     }
     // No separate frameConfig loading from localStorage noted,
@@ -783,7 +816,7 @@ const createZipFile = (
   zip: typeof JSZip,
   dataUrl: string,
   index: number,
-  format: 'png' | 'svg' | 'jpg'
+  format: 'png' | 'svg' | 'svg-legacy' | 'jpg'
 ) => {
   const dataString = dataStringsFromCsv.value[index]
   const frameText = frameTextsFromCsv.value[index]
@@ -801,14 +834,16 @@ const createZipFile = (
   // Sanitize filename to remove invalid characters
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9_-]/g, '_')
 
+  const extension = format === 'svg-legacy' ? 'svg' : format
+
   if (format === 'png' || format === 'jpg') {
-    zip.file(`${sanitizedFileName}.${format}`, dataUrl.split(',')[1], { base64: true })
+    zip.file(`${sanitizedFileName}.${extension}`, dataUrl.split(',')[1], { base64: true })
   } else {
     // For SVG, we don't need to split and use base64
-    zip.file(`${sanitizedFileName}.${format}`, dataUrl)
+    zip.file(`${sanitizedFileName}.${extension}`, dataUrl)
   }
 }
-async function generateBatchQRCodes(format: 'png' | 'svg' | 'jpg') {
+async function generateBatchQRCodes(format: 'png' | 'svg' | 'svg-legacy' | 'jpg') {
   isExportingBatchQRs.value = true
   const zip = new JSZip()
   let numQrCodesCreated = 0
@@ -830,6 +865,12 @@ async function generateBatchQRCodes(format: 'png' | 'svg' | 'jpg') {
         dataUrl = await getPngElement(el, getExportDimensions(), styledBorderRadiusFormatted.value)
       } else if (format === 'jpg') {
         dataUrl = await getJpgElement(el, getExportDimensions(), styledBorderRadiusFormatted.value)
+      } else if (format === 'svg-legacy') {
+        dataUrl = await getLegacySvgString(
+          el,
+          getExportDimensions(),
+          styledBorderRadiusFormatted.value
+        )
       } else {
         dataUrl = await getSvgString(el, getExportDimensions(), styledBorderRadiusFormatted.value)
       }
@@ -1264,6 +1305,36 @@ const mainDivPaddingStyle = computed(() => {
                       font-weight="600"
                     >
                       SVG
+                    </text>
+                  </g>
+                </svg>
+              </button>
+              <button
+                id="download-qr-image-button-svg-legacy"
+                class="button"
+                @click="() => downloadQRImage('svg-legacy')"
+                :disabled="isExportButtonDisabled"
+                :title="
+                  isExportButtonDisabled
+                    ? t('Please enter data to encode first')
+                    : LEGACY_SVG_DOWNLOAD_LABEL
+                "
+                :aria-label="LEGACY_SVG_DOWNLOAD_LABEL"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                  <g fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                    <path d="M5 12V5a2 2 0 0 1 2-2h7l5 5v4" />
+                    <text
+                      x="1"
+                      y="22"
+                      fill="currentColor"
+                      stroke="none"
+                      font-size="11px"
+                      font-family="monospace"
+                      font-weight="600"
+                    >
+                      LEG
                     </text>
                   </g>
                 </svg>
