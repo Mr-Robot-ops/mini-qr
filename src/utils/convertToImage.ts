@@ -3,42 +3,42 @@ import domtoimage, { type Options } from 'dom-to-image'
 import { elementToSVG, inlineResources } from 'dom-to-svg'
 
 /**
-* NOTE:
-* Default export dimensions used as fallback when element metrics are unavailable.
-*/
+ * NOTE:
+ * Default export dimensions used as fallback when element metrics are unavailable.
+ */
 const defaultOptions: Options = {
-width: 400,
-height: 400
+  width: 400,
+  height: 400
 }
 
 /**
-* NOTE:
-* Corner radii structure used across PNG/JPG/SVG pipelines.
-*/
+ * NOTE:
+ * Corner radii structure used across PNG/JPG/SVG pipelines.
+ */
 type CornerRadii = {
-topLeft: number
-topRight: number
-bottomRight: number
-bottomLeft: number
+  topLeft: number
+  topRight: number
+  bottomRight: number
+  bottomLeft: number
 }
 
 const DEFAULT_RADIUS = 48
 
 /**
-* NOTE:
-* Radius helpers for parsing, equality checks and CSS clip-path value building.
-* Keeps values normalized to avoid malformed corners at larger sizes (≥202px).
-*/
+ * NOTE:
+ * Radius helpers for parsing, equality checks and CSS clip-path value building.
+ * Keeps values normalized to avoid malformed corners at larger sizes (≥202px).
+ */
 const areRadiiEqual = (radii: CornerRadii): boolean => {
-const { topLeft, topRight, bottomRight, bottomLeft } = radii
-return topLeft === topRight && topLeft === bottomRight && topLeft === bottomLeft
+  const { topLeft, topRight, bottomRight, bottomLeft } = radii
+  return topLeft === topRight && topLeft === bottomRight && topLeft === bottomLeft
 }
 
 const buildClipPathValue = (radii: CornerRadii): string => {
-const formatted = [radii.topLeft, radii.topRight, radii.bottomRight, radii.bottomLeft].map(
-(value) => formatRadiusValue(value)
-)
-return areRadiiEqual(radii)
+  const formatted = [radii.topLeft, radii.topRight, radii.bottomRight, radii.bottomLeft].map(
+    (value) => formatRadiusValue(value)
+  )
+  return areRadiiEqual(radii)
     ? `inset(0 round ${formatted[0]})`
     : `inset(0 round ${formatted.join(' ')})`
 }
@@ -193,10 +193,10 @@ const getExportPreparation = (
       },
       requestedWidth,
       requestedHeight
-)
+    )
 
-const style: Record<string, string> = {
-...(options.style ? (options.style as Record<string, string>) : {}),
+    const style: Record<string, string> = {
+      ...(options.style ? (options.style as Record<string, string>) : {}),
       transform: `scale(${safeScale})`,
       transformOrigin: 'left top',
       overflow: 'hidden'
@@ -408,31 +408,31 @@ const createRoundedRectPathData = (
       `A ${formatSvgNumber(tr)} ${formatSvgNumber(tr)} 0 0 1 ${formatSvgNumber(offsetX + width)} ${formatSvgNumber(
         offsetY + tr
       )}`
-)
-}
-commands.push(`V ${formatSvgNumber(offsetY + height - br)}`)
+    )
+  }
+  commands.push(`V ${formatSvgNumber(offsetY + height - br)}`)
   if (br > 0) {
     commands.push(
       `A ${formatSvgNumber(br)} ${formatSvgNumber(br)} 0 0 1 ${formatSvgNumber(offsetX + width - br)} ${formatSvgNumber(
         offsetY + height
       )}`
-)
-}
-commands.push(`H ${formatSvgNumber(offsetX + bl)}`)
+    )
+  }
+  commands.push(`H ${formatSvgNumber(offsetX + bl)}`)
   if (bl > 0) {
     commands.push(
       `A ${formatSvgNumber(bl)} ${formatSvgNumber(bl)} 0 0 1 ${formatSvgNumber(offsetX)} ${formatSvgNumber(
         offsetY + height - bl
       )}`
-)
-}
-commands.push(`V ${formatSvgNumber(offsetY + tl)}`)
+    )
+  }
+  commands.push(`V ${formatSvgNumber(offsetY + tl)}`)
   if (tl > 0) {
     commands.push(
       `A ${formatSvgNumber(tl)} ${formatSvgNumber(tl)} 0 0 1 ${formatSvgNumber(offsetX + tl)} ${formatSvgNumber(startY)}`
-)
-}
-commands.push('Z')
+    )
+  }
+  commands.push('Z')
 
   return commands.join(' ')
 }
@@ -503,11 +503,11 @@ const paintBlobWithRoundedCorners = async (
         },
         targetMime,
         quality
-)
-} // end onload
+      )
+    } // end onload
 
-image.onerror = () => {
-URL.revokeObjectURL(image.src)
+    image.onerror = () => {
+      URL.revokeObjectURL(image.src)
       reject(new Error('Failed to load image for rounding'))
     }
 
@@ -536,15 +536,15 @@ const renderRoundedImageBlob = async (
       preparation.width,
       preparation.height,
       outputMimeType ?? baseBlob.type
-)
+    )
 
-return {
-blob: roundedBlob,
-width: preparation.width,
-height: preparation.height
-}
-} catch (error) {
-console.error('Failed to apply rounded corners, falling back to original image.', error)
+    return {
+      blob: roundedBlob,
+      width: preparation.width,
+      height: preparation.height
+    }
+  } catch (error) {
+    console.error('Failed to apply rounded corners, falling back to original image.', error)
     return {
       blob: baseBlob,
       width: preparation.width,
@@ -567,8 +567,7 @@ const getFormattedJpegOptions = (
 ): Options => {
   if (options.width && options.height) {
     const scale = getResizeScaleToFit(element, Number(options.width), Number(options.height)) || 1
-    const radiusValue =
-      borderRadius ? parseInt(borderRadius.replace('px', ''), 10) : DEFAULT_RADIUS
+    const radiusValue = borderRadius ? parseInt(borderRadius.replace('px', ''), 10) : DEFAULT_RADIUS
     const scaledRadius = `${radiusValue / scale}px`
 
     return {
@@ -717,8 +716,8 @@ function applySvgOptions(svgDocument: Document, preparation: ExportPreparation) 
     `${formatSvgNumber(viewBoxX)} ${formatSvgNumber(viewBoxY)} ${formatSvgNumber(
       viewBoxWidth
     )} ${formatSvgNumber(viewBoxHeight)}`
-)
-svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+  )
+  svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
 
   if (options.style) {
     const style = { ...(options.style as Record<string, string>) }
@@ -769,8 +768,8 @@ svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
   path.setAttribute(
     'd',
     createRoundedRectPathData(clipRadii, viewBoxWidth, viewBoxHeight, viewBoxX, viewBoxY)
-)
-clipPath.appendChild(path)
+  )
+  clipPath.appendChild(path)
 
   defs.appendChild(clipPath)
 
@@ -834,5 +833,509 @@ export function downloadSvgElement(
     })
     .catch((error: Error) => {
       console.error('Error converting element to SVG:', error)
+    })
+}
+
+/**
+ * NOTE:
+ * Legacy SVG sanitisation helpers remove advanced features that minimal
+ * renderers (e.g., IrfanView plug-ins) do not understand.
+ */
+const LEGACY_STYLE_ATTRIBUTES = new Set([
+  'fill',
+  'stroke',
+  'stroke-width',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'stroke-miterlimit',
+  'stroke-dasharray',
+  'stroke-dashoffset',
+  'fill-opacity',
+  'fill-rule',
+  'clip-rule',
+  'stroke-opacity',
+  'opacity',
+  'transform',
+  'font-size',
+  'font-family',
+  'font-weight',
+  'font-style',
+  'shape-rendering',
+  'vector-effect',
+  'text-anchor',
+  'dominant-baseline',
+  'letter-spacing',
+  'word-spacing'
+])
+
+const PRESENTATION_ATTRIBUTES = Array.from(LEGACY_STYLE_ATTRIBUTES)
+
+const CSS_VARIABLE_PREFIX = '--'
+
+const VAR_FUNCTION_PATTERN = /var\((--[\w-]+)(?:,\s*([^)]+))?\)/g
+
+const MAX_CSS_VAR_DEPTH = 10
+
+function parseStyleDeclarations(styleValue: string): Array<[string, string]> {
+  return styleValue
+    .split(';')
+    .map((declaration) => declaration.trim())
+    .filter(Boolean)
+    .map((declaration) => {
+      const separatorIndex = declaration.indexOf(':')
+      if (separatorIndex === -1) {
+        return null
+      }
+      const property = declaration.slice(0, separatorIndex).trim().toLowerCase()
+      const value = declaration.slice(separatorIndex + 1).trim()
+      if (!property || !value) {
+        return null
+      }
+      return [property, value] as [string, string]
+    })
+    .filter((entry): entry is [string, string] => Boolean(entry))
+}
+
+function resolveCssVariables(value: string, variables: Map<string, string>, depth = 0): string {
+  if (!value) {
+    return value
+  }
+  if (!value.includes('var(') || depth > MAX_CSS_VAR_DEPTH) {
+    return value
+  }
+
+  let replaced = value
+  let didReplace = false
+
+  const matcher = new RegExp(VAR_FUNCTION_PATTERN.source, 'g')
+
+  replaced = replaced.replace(matcher, (_match, name: string, fallback?: string) => {
+    didReplace = true
+    const trimmedName = name.trim()
+    const resolved = variables.get(trimmedName)
+    if (resolved && resolved !== trimmedName) {
+      return resolveCssVariables(resolved, variables, depth + 1)
+    }
+    if (fallback) {
+      const cleanedFallback = fallback.trim()
+      if (cleanedFallback) {
+        return resolveCssVariables(cleanedFallback, variables, depth + 1)
+      }
+    }
+    return ''
+  })
+
+  if (!didReplace) {
+    return replaced
+  }
+
+  if (replaced.includes('var(') && depth < MAX_CSS_VAR_DEPTH) {
+    return resolveCssVariables(replaced, variables, depth + 1)
+  }
+
+  return replaced
+}
+
+function stripUnsupportedForLegacy(svgDocument: Document) {
+  const svgElement = svgDocument.documentElement
+  if (!svgElement) {
+    return
+  }
+
+  const disallowedTags = [
+    'defs',
+    'style',
+    'mask',
+    'clipPath',
+    'filter',
+    'foreignObject',
+    'image',
+    'symbol',
+    'use'
+  ]
+
+  for (const tagName of disallowedTags) {
+    const elements = Array.from(svgDocument.getElementsByTagName(tagName))
+    for (const element of elements) {
+      element.parentNode?.removeChild(element)
+    }
+  }
+
+  const attributesToRemove = ['clip-path', 'mask', 'filter']
+
+  const walk = (element: Element, inheritedVariables: Map<string, string>) => {
+    for (const attribute of attributesToRemove) {
+      if (element.hasAttribute(attribute)) {
+        element.removeAttribute(attribute)
+      }
+    }
+
+    let activeVariables = inheritedVariables
+    const styleValue = element.getAttribute('style')
+    if (styleValue) {
+      const declarations = parseStyleDeclarations(styleValue)
+      const localVariables = new Map(inheritedVariables)
+
+      for (const [property, value] of declarations) {
+        if (!property.startsWith(CSS_VARIABLE_PREFIX)) {
+          continue
+        }
+        const resolved = resolveCssVariables(value, localVariables)
+        localVariables.set(property, resolved)
+      }
+
+      for (const [property, value] of declarations) {
+        if (property.startsWith(CSS_VARIABLE_PREFIX)) {
+          continue
+        }
+        if (!LEGACY_STYLE_ATTRIBUTES.has(property)) {
+          continue
+        }
+        if (element.hasAttribute(property)) {
+          continue
+        }
+        const resolved = resolveCssVariables(value, localVariables)
+        if (resolved) {
+          element.setAttribute(property, resolved)
+        }
+      }
+
+      element.removeAttribute('style')
+      activeVariables = localVariables
+    }
+
+    for (const attributeName of PRESENTATION_ATTRIBUTES) {
+      const attributeValue = element.getAttribute(attributeName)
+      if (attributeValue && attributeValue.includes('var(')) {
+        const resolved = resolveCssVariables(attributeValue, activeVariables)
+        element.setAttribute(attributeName, resolved)
+      }
+    }
+
+    const nextVariables = styleValue ? new Map(activeVariables) : activeVariables
+    for (const child of Array.from(element.children)) {
+      walk(child, nextVariables)
+    }
+  }
+
+  walk(svgElement, new Map())
+}
+
+function applyStrictRootSize(svgDocument: Document, width: number, height: number) {
+  const svgElement = svgDocument.documentElement
+  if (!svgElement) {
+    return
+  }
+
+  const fallbackWidth = parseDimension(svgElement.getAttribute('width')) ?? defaultOptions.width
+  const fallbackHeight = parseDimension(svgElement.getAttribute('height')) ?? defaultOptions.height
+
+  const resolvedWidth = Number.isFinite(width) && width > 0 ? width : fallbackWidth
+  const resolvedHeight = Number.isFinite(height) && height > 0 ? height : fallbackHeight
+
+  const widthPx = Math.max(1, Math.round(resolvedWidth))
+  const heightPx = Math.max(1, Math.round(resolvedHeight))
+
+  svgElement.setAttribute('width', `${widthPx}px`)
+  svgElement.setAttribute('height', `${heightPx}px`)
+
+  svgElement.setAttribute('viewBox', `0 0 ${formatSvgNumber(widthPx)} ${formatSvgNumber(heightPx)}`)
+  svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+}
+
+function removeRoundedCornersLegacy(svgDocument: Document) {
+  // Intentionally left blank: rounded corners are ignored for legacy output.
+  void svgDocument
+}
+
+type LegacyAdjustment = (offsetX: number, offsetY: number) => void
+
+const parseNumericAttribute = (value: string | null): number | null => {
+  if (!value) return null
+  const parsed = parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+type TranslationExtraction = {
+  tx: number
+  ty: number
+  consumed: boolean
+}
+
+const TRANSLATE_REGEX =
+  /translate\(\s*([+-]?\d*\.?\d+(?:e[+-]?\d+)?)?(?:[\s,]+([+-]?\d*\.?\d+(?:e[+-]?\d+)?))?\s*\)/i
+const MATRIX_REGEX = /matrix\(([^)]+)\)/i
+
+function extractTranslation(transformValue: string | null): TranslationExtraction {
+  if (!transformValue) {
+    return { tx: 0, ty: 0, consumed: false }
+  }
+
+  const translateMatch = transformValue.match(TRANSLATE_REGEX)
+  if (translateMatch) {
+    const tx = parseFloat(translateMatch[1] ?? '0')
+    const ty = parseFloat(translateMatch[2] ?? '0')
+    return {
+      tx: Number.isFinite(tx) ? tx : 0,
+      ty: Number.isFinite(ty) ? ty : 0,
+      consumed: true
+    }
+  }
+
+  const matrixMatch = transformValue.match(MATRIX_REGEX)
+  if (matrixMatch) {
+    const components = matrixMatch[1]
+      .split(/[\s,]+/)
+      .map((component) => parseFloat(component))
+      .filter((component) => Number.isFinite(component))
+
+    if (components.length === 6) {
+      const [a, b, c, d, e, f] = components
+      const isIdentityScale = Math.abs(a - 1) < 1e-6 && Math.abs(d - 1) < 1e-6
+      const isZeroSkew = Math.abs(b) < 1e-6 && Math.abs(c) < 1e-6
+      if (isIdentityScale && isZeroSkew) {
+        return { tx: e, ty: f, consumed: true }
+      }
+    }
+  }
+
+  return { tx: 0, ty: 0, consumed: false }
+}
+
+function normalizeLegacyCoordinates(svgDocument: Document) {
+  const svgElement = svgDocument.documentElement
+  if (!svgElement) {
+    return
+  }
+
+  let minX = Number.POSITIVE_INFINITY
+  let minY = Number.POSITIVE_INFINITY
+  let maxX = Number.NEGATIVE_INFINITY
+  let maxY = Number.NEGATIVE_INFINITY
+
+  const adjustments: LegacyAdjustment[] = []
+
+  const recordBounds = (x: number, y: number) => {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return
+    }
+    minX = Math.min(minX, x)
+    minY = Math.min(minY, y)
+    maxX = Math.max(maxX, x)
+    maxY = Math.max(maxY, y)
+  }
+
+  const recordRect = (x: number, y: number, width: number, height: number, element: Element) => {
+    if (!Number.isFinite(width) || !Number.isFinite(height)) {
+      return
+    }
+    recordBounds(x, y)
+    recordBounds(x + width, y + height)
+    adjustments.push((offsetX, offsetY) => {
+      element.setAttribute('x', formatSvgNumber(x - offsetX))
+      element.setAttribute('y', formatSvgNumber(y - offsetY))
+    })
+  }
+
+  const recordCircle = (cx: number, cy: number, r: number, element: Element) => {
+    if (!Number.isFinite(r)) {
+      return
+    }
+    recordBounds(cx - r, cy - r)
+    recordBounds(cx + r, cy + r)
+    adjustments.push((offsetX, offsetY) => {
+      element.setAttribute('cx', formatSvgNumber(cx - offsetX))
+      element.setAttribute('cy', formatSvgNumber(cy - offsetY))
+    })
+  }
+
+  const recordLine = (x1: number, y1: number, x2: number, y2: number, element: Element) => {
+    recordBounds(x1, y1)
+    recordBounds(x2, y2)
+    adjustments.push((offsetX, offsetY) => {
+      element.setAttribute('x1', formatSvgNumber(x1 - offsetX))
+      element.setAttribute('y1', formatSvgNumber(y1 - offsetY))
+      element.setAttribute('x2', formatSvgNumber(x2 - offsetX))
+      element.setAttribute('y2', formatSvgNumber(y2 - offsetY))
+    })
+  }
+
+  const recordPoints = (points: Array<[number, number]>, element: Element) => {
+    for (const [x, y] of points) {
+      recordBounds(x, y)
+    }
+    adjustments.push((offsetX, offsetY) => {
+      const adjusted = points
+        .map(([x, y]) => `${formatSvgNumber(x - offsetX)},${formatSvgNumber(y - offsetY)}`)
+        .join(' ')
+      element.setAttribute('points', adjusted)
+    })
+  }
+
+  const parsePoints = (value: string | null): Array<[number, number]> => {
+    if (!value) {
+      return []
+    }
+    const entries = value.trim().split(/\s+/)
+    const result: Array<[number, number]> = []
+    for (const entry of entries) {
+      const [xRaw, yRaw] = entry.split(',')
+      const x = parseFloat(xRaw ?? '')
+      const y = parseFloat(yRaw ?? '')
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        result.push([x, y])
+      }
+    }
+    return result
+  }
+
+  const walk = (element: Element, parentTx: number, parentTy: number) => {
+    const { tx, ty, consumed } = extractTranslation(element.getAttribute('transform'))
+    const totalTx = parentTx + tx
+    const totalTy = parentTy + ty
+
+    if (consumed) {
+      element.removeAttribute('transform')
+    }
+
+    const tag = element.tagName.toLowerCase()
+
+    switch (tag) {
+      case 'rect': {
+        const rawX = parseNumericAttribute(element.getAttribute('x')) ?? 0
+        const rawY = parseNumericAttribute(element.getAttribute('y')) ?? 0
+        const width = parseNumericAttribute(element.getAttribute('width')) ?? 0
+        const height = parseNumericAttribute(element.getAttribute('height')) ?? 0
+        const x = rawX + totalTx
+        const y = rawY + totalTy
+        recordRect(x, y, width, height, element)
+        break
+      }
+      case 'circle': {
+        const rawCx = parseNumericAttribute(element.getAttribute('cx')) ?? 0
+        const rawCy = parseNumericAttribute(element.getAttribute('cy')) ?? 0
+        const r = parseNumericAttribute(element.getAttribute('r')) ?? 0
+        const cx = rawCx + totalTx
+        const cy = rawCy + totalTy
+        recordCircle(cx, cy, r, element)
+        break
+      }
+      case 'ellipse': {
+        const rawCx = parseNumericAttribute(element.getAttribute('cx')) ?? 0
+        const rawCy = parseNumericAttribute(element.getAttribute('cy')) ?? 0
+        const rx = parseNumericAttribute(element.getAttribute('rx')) ?? 0
+        const ry = parseNumericAttribute(element.getAttribute('ry')) ?? 0
+        const cx = rawCx + totalTx
+        const cy = rawCy + totalTy
+        recordBounds(cx - rx, cy - ry)
+        recordBounds(cx + rx, cy + ry)
+        adjustments.push((offsetX, offsetY) => {
+          element.setAttribute('cx', formatSvgNumber(cx - offsetX))
+          element.setAttribute('cy', formatSvgNumber(cy - offsetY))
+        })
+        break
+      }
+      case 'line': {
+        const x1 = (parseNumericAttribute(element.getAttribute('x1')) ?? 0) + totalTx
+        const y1 = (parseNumericAttribute(element.getAttribute('y1')) ?? 0) + totalTy
+        const x2 = (parseNumericAttribute(element.getAttribute('x2')) ?? 0) + totalTx
+        const y2 = (parseNumericAttribute(element.getAttribute('y2')) ?? 0) + totalTy
+        recordLine(x1, y1, x2, y2, element)
+        break
+      }
+      case 'polyline':
+      case 'polygon': {
+        const points = parsePoints(element.getAttribute('points')).map(([x, y]) => [
+          x + totalTx,
+          y + totalTy
+        ])
+        if (points.length > 0) {
+          recordPoints(points, element)
+        }
+        break
+      }
+      case 'text':
+      case 'tspan': {
+        const rawX = parseNumericAttribute(element.getAttribute('x')) ?? 0
+        const rawY = parseNumericAttribute(element.getAttribute('y')) ?? 0
+        const x = rawX + totalTx
+        const y = rawY + totalTy
+        recordBounds(x, y)
+        adjustments.push((offsetX, offsetY) => {
+          element.setAttribute('x', formatSvgNumber(x - offsetX))
+          element.setAttribute('y', formatSvgNumber(y - offsetY))
+        })
+        break
+      }
+      default:
+        break
+    }
+
+    for (const child of Array.from(element.children)) {
+      walk(child, totalTx, totalTy)
+    }
+  }
+
+  walk(svgElement, 0, 0)
+
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+    return
+  }
+
+  const offsetX = minX
+  const offsetY = minY
+  for (const apply of adjustments) {
+    apply(offsetX, offsetY)
+  }
+
+  const viewBoxWidth = Math.max(1, maxX - minX)
+  const viewBoxHeight = Math.max(1, maxY - minY)
+  svgElement.setAttribute(
+    'viewBox',
+    `0 0 ${formatSvgNumber(viewBoxWidth)} ${formatSvgNumber(viewBoxHeight)}`
+  )
+}
+
+export async function getLegacySvgString(
+  element: HTMLElement,
+  options: Options,
+  _borderRadius?: string
+): Promise<string> {
+  void _borderRadius
+  const preparation = getExportPreparation(element, options)
+  const svgDocument = elementToSVG(element)
+
+  stripUnsupportedForLegacy(svgDocument)
+  normalizeLegacyCoordinates(svgDocument)
+  applyStrictRootSize(svgDocument, preparation.width, preparation.height)
+  removeRoundedCornersLegacy(svgDocument)
+
+  return new XMLSerializer().serializeToString(svgDocument)
+}
+
+export async function getLegacySvgElement(
+  element: HTMLElement,
+  options: Options,
+  borderRadius?: string
+): Promise<string> {
+  const svgString = await getLegacySvgString(element, options, borderRadius)
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
+}
+
+export function downloadLegacySvgElement(
+  element: HTMLElement,
+  filename: string,
+  options: Options,
+  borderRadius?: string
+) {
+  getLegacySvgElement(element, options, borderRadius)
+    .then((dataUrl: string) => {
+      const link = document.createElement('a')
+      link.href = dataUrl
+      link.download = filename
+      link.click()
+    })
+    .catch((error: Error) => {
+      console.error('Error converting element to legacy SVG:', error)
     })
 }
