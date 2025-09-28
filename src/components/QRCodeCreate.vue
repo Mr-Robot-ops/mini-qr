@@ -151,8 +151,7 @@ const style = computed(() => ({
 }))
 
 const previewDimensions = computed(() => {
-  const margin = Math.max(sanitizedMargin.value, 0)
-  const size = PREVIEW_QRCODE_DIM_UNIT + margin * 2
+  const size = Math.max(PREVIEW_QRCODE_DIM_UNIT, 1)
   const formattedSize = `${size}px`
   return { width: formattedSize, height: formattedSize }
 })
@@ -447,31 +446,28 @@ const PREVIEW_QRCODE_DIM_UNIT = 200
  * to include the frame's size. Otherwise, uses the configured width and height values.
  */
 function getExportDimensions() {
-  const margin = Math.max(sanitizedMargin.value, 0)
   const baseWidth = Math.max(sanitizedWidth.value, 0)
   const baseHeight = Math.max(sanitizedHeight.value, 0)
-  const totalWidth = baseWidth + margin * 2
-  const totalHeight = baseHeight + margin * 2
 
   if (!showFrame.value) {
     return {
-      width: totalWidth,
-      height: totalHeight
+      width: baseWidth,
+      height: baseHeight
     }
   }
 
   const el = document.getElementById('element-to-export')
   if (!el) {
     return {
-      width: totalWidth,
-      height: totalHeight
+      width: baseWidth,
+      height: baseHeight
     }
   }
 
-  const previewTotalWidth = PREVIEW_QRCODE_DIM_UNIT + margin * 2
-  const previewTotalHeight = PREVIEW_QRCODE_DIM_UNIT + margin * 2
-  const widthScale = previewTotalWidth > 0 ? totalWidth / previewTotalWidth : 1
-  const heightScale = previewTotalHeight > 0 ? totalHeight / previewTotalHeight : 1
+  const previewTotalWidth = PREVIEW_QRCODE_DIM_UNIT
+  const previewTotalHeight = PREVIEW_QRCODE_DIM_UNIT
+  const widthScale = previewTotalWidth > 0 ? baseWidth / previewTotalWidth : 1
+  const heightScale = previewTotalHeight > 0 ? baseHeight / previewTotalHeight : 1
 
   return {
     width: el.offsetWidth * widthScale,

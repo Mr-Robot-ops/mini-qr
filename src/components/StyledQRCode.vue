@@ -68,24 +68,21 @@ const normalizedHeight = computed(() => {
   return Number.isFinite(parsed) ? Math.max(parsed, 0) : 0
 })
 
-const totalDimensions = computed(() => {
-  const width = Math.max(normalizedWidth.value + normalizedMargin.value * 2, 1)
-  const height = Math.max(normalizedHeight.value + normalizedMargin.value * 2, 1)
-  return { width, height }
-})
+const displayWidth = computed(() => Math.max(normalizedWidth.value, 1))
+const displayHeight = computed(() => Math.max(normalizedHeight.value, 1))
 
 const qrProps = computed<StyledQRCodeProps>(() => ({
   ...props,
-  width: totalDimensions.value.width,
-  height: totalDimensions.value.height,
+  width: displayWidth.value,
+  height: displayHeight.value,
   margin: normalizedMargin.value,
   image: props.image === null ? undefined : props.image
 }))
 
 const containerStyle = computed<CSSProperties>(() => {
   const style: CSSProperties = {
-    width: `${totalDimensions.value.width}px`,
-    height: `${totalDimensions.value.height}px`
+    width: `${displayWidth.value}px`,
+    height: `${displayHeight.value}px`
   }
 
   const backgroundColor = props.backgroundOptions?.color ?? 'transparent'
