@@ -58,10 +58,11 @@ const normalizedMargin = computed(() => {
   return Number.isFinite(parsed) ? Math.max(parsed, 0) : 0
 })
 
-const MINIMUM_RENDER_MARGIN = 0.001
-const rendererMargin = computed(() =>
-  normalizedMargin.value > 0 ? normalizedMargin.value : MINIMUM_RENDER_MARGIN
-)
+// qr-code-styling renders an implicit quiet zone that's roughly 13px at our default
+// dimensions. We keep the UI starting at 0px while shifting the renderer by this
+// baseline so every user-specified pixel still maps 1:1 to the visual margin.
+const BASELINE_MARGIN = 13
+const rendererMargin = computed(() => normalizedMargin.value + BASELINE_MARGIN)
 
 const normalizedWidth = computed(() => {
   const parsed = Number(props.width)
