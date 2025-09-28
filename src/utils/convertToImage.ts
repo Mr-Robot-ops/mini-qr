@@ -860,18 +860,18 @@ export async function getLegacySvgString(
   const svgWidth = Math.max(1, Math.round(width))
   const svgHeight = Math.max(1, Math.round(height))
 
-  const pxWidth = `${svgWidth}px`
-  const pxHeight = `${svgHeight}px`
+  const widthAttr = svgWidth.toString()
+  const heightAttr = svgHeight.toString()
 
   const svgParts = [
     '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
     '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">',
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xml:space="preserve" width="${pxWidth}" height="${pxHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xml:space="preserve" width="${widthAttr}" height="${heightAttr}" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none">`,
     '  <defs>',
     '    <style type="text/css"><![CDATA[image{image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated;}]]></style>',
     '  </defs>',
-    '  <rect width="100%" height="100%" fill="transparent"/>',
-    `  <image x="0" y="0" width="${pxWidth}" height="${pxHeight}" preserveAspectRatio="none" image-rendering="optimizeSpeed" xlink:href="${dataUrl}" type="image/png"/>`,
+    '  <rect width="100%" height="100%" fill="#ffffff"/>',
+    `  <image x="0" y="0" width="${widthAttr}" height="${heightAttr}" preserveAspectRatio="none" style="image-rendering:optimizeSpeed;image-rendering:crisp-edges;shape-rendering:crispEdges" href="${dataUrl}" xlink:href="${dataUrl}"/>`,
     '</svg>'
   ]
 
