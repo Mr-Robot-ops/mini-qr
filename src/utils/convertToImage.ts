@@ -455,38 +455,6 @@ const blobToDataURL = (blob: Blob): Promise<string> =>
     reader.readAsDataURL(blob)
   })
 
-const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-  if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
-    let binary = ''
-    const bytes = new Uint8Array(buffer)
-    const chunkSize = 0x8000
-
-    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-      const chunk = bytes.subarray(offset, offset + chunkSize)
-      binary += String.fromCharCode(...chunk)
-    }
-
-    return window.btoa(binary)
-  }
-
-  const globalBuffer = (
-    globalThis as unknown as {
-      Buffer?: { from(input: ArrayBuffer | Uint8Array): { toString(encoding: string): string } }
-    }
-  ).Buffer
-
-  if (globalBuffer) {
-    return globalBuffer.from(buffer).toString('base64')
-  }
-
-  throw new Error('No base64 encoder available in this environment')
-}
-
-const blobToBase64 = async (blob: Blob): Promise<string> => {
-  const buffer = await blob.arrayBuffer()
-  return arrayBufferToBase64(buffer)
-}
-
 /**
  * NOTE:
  * PNG pipeline: repaint base raster with real rounded corners on Canvas.
@@ -888,20 +856,17 @@ export async function getLegacySvgString(
     'image/png'
   )
 
-  const base64Payload = await blobToBase64(blob)
+  const dataUrl = await blobToDataURL(blob)
   const svgWidth = Math.max(1, Math.round(width))
   const svgHeight = Math.max(1, Math.round(height))
-  const mimeType = blob.type || 'image/png'
 
-  const sizeWidth = `${svgWidth}`
-  const sizeHeight = `${svgHeight}`
-  const dataUri = `data:${mimeType};base64,${base64Payload}`
+  const pxWidth = `${svgWidth}px`
+  const pxHeight = `${svgHeight}px`
 
   const svgParts = [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${sizeWidth}" height="${sizeHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet">`,
-    `  <rect width="100%" height="100%" fill="transparent"/>`,
-    `  <image x="0" y="0" width="${sizeWidth}" height="${sizeHeight}" preserveAspectRatio="none" style="image-rendering:crisp-edges" href="${dataUri}" xlink:href="${dataUri}"/>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xml:space="preserve" width="${pxWidth}" height="${pxHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet">`,
+    `  <image x="0" y="0" width="${pxWidth}" height="${pxHeight}" image-rendering="optimizeQuality" preserveAspectRatio="none" href="${dataUrl}" xlink:href="${dataUrl}"></image>`,
     '</svg>'
   ]
 
