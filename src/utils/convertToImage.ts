@@ -868,6 +868,67 @@ const LEGACY_STYLE_ATTRIBUTES = new Set([
   'word-spacing'
 ])
 
+function applyLegacySvgOptions(svgDocument: Document, preparation: ExportPreparation) {
+  const svgElement = svgDocument.documentElement
+  if (!svgElement) {
+    return
+  }
+
+  const { width, height, sourceWidth, sourceHeight, sourceX, sourceY, options } = preparation
+
+  const viewBoxAttr = svgElement.getAttribute('viewBox')
+  const parsedViewBox = viewBoxAttr
+    ? viewBoxAttr.split(/\s+/).map((value) => Number.parseFloat(value))
+    : []
+
+  let viewBoxX = Number.isFinite(parsedViewBox[0]) ? parsedViewBox[0] : sourceX
+  let viewBoxY = Number.isFinite(parsedViewBox[1]) ? parsedViewBox[1] : sourceY
+  let viewBoxWidth = Number.isFinite(parsedViewBox[2]) ? parsedViewBox[2] : sourceWidth
+  let viewBoxHeight = Number.isFinite(parsedViewBox[3]) ? parsedViewBox[3] : sourceHeight
+
+  if (!Number.isFinite(viewBoxWidth) || viewBoxWidth <= 0) {
+    viewBoxWidth = sourceWidth
+  }
+  if (!Number.isFinite(viewBoxHeight) || viewBoxHeight <= 0) {
+    viewBoxHeight = sourceHeight
+  }
+  if (!Number.isFinite(viewBoxX)) {
+    viewBoxX = sourceX
+  }
+  if (!Number.isFinite(viewBoxY)) {
+    viewBoxY = sourceY
+  }
+
+  svgElement.setAttribute('width', width.toString())
+  svgElement.setAttribute('height', height.toString())
+  svgElement.setAttribute(
+    'viewBox',
+    `${formatSvgNumber(viewBoxX)} ${formatSvgNumber(viewBoxY)} ${formatSvgNumber(
+      viewBoxWidth
+    )} ${formatSvgNumber(viewBoxHeight)}`
+  )
+  svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+
+  if (options.style) {
+    const style = { ...(options.style as Record<string, string>) }
+    delete style.transform
+    delete style.transformOrigin
+    delete style.borderRadius
+    delete style.borderTopLeftRadius
+    delete style.borderTopRightRadius
+    delete style.borderBottomRightRadius
+    delete style.borderBottomLeftRadius
+    delete style.clipPath
+    delete style.webkitClipPath
+    for (const [key, value] of Object.entries(style)) {
+      ;(svgElement.style as unknown as Record<string, string>)[key] = value
+    }
+  }
+
+  ;(svgElement.style as unknown as Record<string, string>).clipPath = ''
+  ;(svgElement.style as unknown as Record<string, string>).webkitClipPath = ''
+}
+
 function stripUnsupportedForLegacy(svgDocument: Document) {
   const svgElement = svgDocument.documentElement
   if (!svgElement) {
@@ -979,6 +1040,7 @@ export async function getLegacySvgString(
   const preparation = getExportPreparation(element, options)
   const svgDocument = elementToSVG(element)
 
+  applyLegacySvgOptions(svgDocument, preparation)
   stripUnsupportedForLegacy(svgDocument)
   applyStrictRootSize(svgDocument, preparation.width, preparation.height)
   removeRoundedCornersLegacy(svgDocument)
