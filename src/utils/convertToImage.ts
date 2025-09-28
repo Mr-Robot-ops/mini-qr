@@ -838,52 +838,126 @@ export function downloadSvgElement(
 
 /**
  * NOTE:
- * Legacy SVG helper that inlines a PNG snapshot inside an SVG container.
- * Many legacy viewers (e.g., IrfanView, some messaging apps) struggle with
- * modern SVG features we use in the standard exporter such as clip-paths.
- * By rasterising the element first and wrapping it in an <image> tag, we
- * preserve the expected appearance while maximising compatibility.
+ * Helpers dedicated to the legacy SVG path. Minimal renderers (e.g. IrfanView)
+ * support only basic geometry, so we strip unsupported constructs and enforce
+ * fixed sizing without relying on clip paths or embedded raster data.
  */
+function stripUnsupportedForLegacy(svgDocument: Document) {
+  const svgElement = svgDocument.documentElement
+  if (!svgElement) return
+
+  const removalTags = [
+    'defs',
+    'style',
+    'mask',
+    'clippath',
+    'filter',
+    'foreignobject',
+    'image',
+    'symbol',
+    'use'
+  ]
+
+  for (const tag of removalTags) {
+    const nodes = svgElement.querySelectorAll(tag)
+    nodes.forEach((node) => {
+      node.parentNode?.removeChild(node)
+    })
+  }
+
+  const allElements: Element[] = [svgElement, ...Array.from(svgElement.querySelectorAll('*'))]
+  const attributesToRemove = ['clip-path', 'mask', 'filter']
+
+  for (const element of allElements) {
+    for (const attribute of attributesToRemove) {
+      if (element.hasAttribute(attribute)) {
+        element.removeAttribute(attribute)
+      }
+    }
+
+    const styleAttr = element.getAttribute('style')
+    if (!styleAttr) continue
+
+    const declarations = styleAttr
+      .split(';')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+
+    const styleMap = new Map<string, string>()
+    for (const declaration of declarations) {
+      const [property, ...valueParts] = declaration.split(':')
+      if (!property || valueParts.length === 0) continue
+      const value = valueParts.join(':').trim()
+      const key = property.trim().toLowerCase()
+      if (value) {
+        styleMap.set(key, value)
+      }
+    }
+
+    const attributeMap: Record<string, string> = {
+      fill: 'fill',
+      stroke: 'stroke',
+      'stroke-width': 'stroke-width',
+      'stroke-linecap': 'stroke-linecap',
+      'stroke-linejoin': 'stroke-linejoin',
+      'stroke-miterlimit': 'stroke-miterlimit',
+      'fill-opacity': 'fill-opacity',
+      'stroke-opacity': 'stroke-opacity',
+      opacity: 'opacity'
+    }
+
+    for (const [styleName, attributeName] of Object.entries(attributeMap)) {
+      const value = styleMap.get(styleName)
+      if (value && !element.hasAttribute(attributeName)) {
+        element.setAttribute(attributeName, value)
+      }
+    }
+
+    element.removeAttribute('style')
+  }
+}
+
+function applyStrictRootSize(svgDocument: Document, width: number, height: number) {
+  const svgElement = svgDocument.documentElement
+  if (!svgElement) return
+
+  const safeWidth = Math.max(1, Math.round(width))
+  const safeHeight = Math.max(1, Math.round(height))
+
+  svgElement.setAttribute('width', `${safeWidth}px`)
+  svgElement.setAttribute('height', `${safeHeight}px`)
+
+  if (!svgElement.getAttribute('viewBox')) {
+    svgElement.setAttribute('viewBox', `0 0 ${safeWidth} ${safeHeight}`)
+  }
+
+  svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+}
+
+function removeRoundedCornersLegacy(_svgDocument: Document) {
+  // Rounded corners rely on clipPath in the modern exporter. Legacy output
+  // intentionally ignores them to maximise compatibility.
+}
+
 export async function getLegacySvgString(
   element: HTMLElement,
   options: Options,
-  borderRadius?: string
+  _borderRadius?: string
 ): Promise<string> {
-  const { blob, width, height } = await renderRoundedImageBlob(
-    element,
-    options,
-    borderRadius,
-    'image/png'
-  )
-
-  const dataUrl = await blobToDataURL(blob)
-  const svgWidth = Math.max(1, Math.round(width))
-  const svgHeight = Math.max(1, Math.round(height))
-
-  const widthAttr = svgWidth.toString()
-  const heightAttr = svgHeight.toString()
-
-  const svgParts = [
-    '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
-    '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">',
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xml:space="preserve" width="${widthAttr}" height="${heightAttr}" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="none">`,
-    '  <defs>',
-    '    <style type="text/css"><![CDATA[image{image-rendering:optimizeSpeed;image-rendering:crisp-edges;image-rendering:pixelated;}]]></style>',
-    '  </defs>',
-    '  <rect width="100%" height="100%" fill="#ffffff"/>',
-    `  <image x="0" y="0" width="${widthAttr}" height="${heightAttr}" preserveAspectRatio="none" style="image-rendering:optimizeSpeed;image-rendering:crisp-edges;shape-rendering:crispEdges" href="${dataUrl}" xlink:href="${dataUrl}"/>`,
-    '</svg>'
-  ]
-
-  return svgParts.join('\n')
+  const preparation = getExportPreparation(element, options)
+  const svgDocument = elementToSVG(element)
+  stripUnsupportedForLegacy(svgDocument)
+  applyStrictRootSize(svgDocument, preparation.width, preparation.height)
+  removeRoundedCornersLegacy(svgDocument)
+  return new XMLSerializer().serializeToString(svgDocument)
 }
 
 export async function getLegacySvgElement(
   element: HTMLElement,
   options: Options,
-  borderRadius?: string
+  _borderRadius?: string
 ): Promise<string> {
-  const svgString = await getLegacySvgString(element, options, borderRadius)
+  const svgString = await getLegacySvgString(element, options)
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
 }
 
@@ -891,9 +965,9 @@ export function downloadLegacySvgElement(
   element: HTMLElement,
   filename: string,
   options: Options,
-  borderRadius?: string
+  _borderRadius?: string
 ) {
-  getLegacySvgElement(element, options, borderRadius)
+  getLegacySvgElement(element, options)
     .then((dataUrl: string) => {
       const link = document.createElement('a')
       link.href = dataUrl
