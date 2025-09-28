@@ -863,14 +863,45 @@ function applyLegacySvgOptions(svgDocument: Document, preparation: ExportPrepara
     style.webkitClipPath = ''
   }
 
+  const stripClipPathStyles = (element: Element) => {
+    const styleAttr = element.getAttribute('style')
+    if (!styleAttr) return
+
+    const sanitized = styleAttr
+      .split(';')
+      .map((part) => part.trim())
+      .filter(
+        (part) =>
+          part &&
+          !part.toLowerCase().startsWith('clip-path') &&
+          !part.toLowerCase().startsWith('-webkit-clip-path') &&
+          !part.toLowerCase().startsWith('mask')
+      )
+
+    if (sanitized.length) {
+      element.setAttribute('style', sanitized.join('; '))
+    } else {
+      element.removeAttribute('style')
+    }
+  }
+
+  const elements = svgElement.querySelectorAll<SVGElement>('*')
+  stripClipPathStyles(svgElement)
   svgElement.removeAttribute('clip-path')
   svgElement.removeAttribute('clipPath')
 
-  const maskedNodes = svgElement.querySelectorAll('[mask]')
-  maskedNodes.forEach((node) => node.removeAttribute('mask'))
+  elements.forEach((node) => {
+    stripClipPathStyles(node)
+    node.removeAttribute('clip-path')
+    node.removeAttribute('clipPath')
+    node.removeAttribute('mask')
+  })
 
   const maskNodes = svgElement.querySelectorAll('mask')
   maskNodes.forEach((node) => node.parentNode?.removeChild(node))
+
+  const clipPaths = svgElement.querySelectorAll('clipPath')
+  clipPaths.forEach((node) => node.parentNode?.removeChild(node))
 
   const defsNodes = svgElement.querySelectorAll('defs')
   defsNodes.forEach((defs) => {
@@ -878,9 +909,6 @@ function applyLegacySvgOptions(svgDocument: Document, preparation: ExportPrepara
       defs.parentNode?.removeChild(defs)
     }
   })
-
-  const clipPaths = svgElement.querySelectorAll('clipPath')
-  clipPaths.forEach((node) => node.parentNode?.removeChild(node))
 }
 
 export async function getLegacySvgString(

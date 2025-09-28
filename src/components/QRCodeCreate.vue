@@ -1287,9 +1287,9 @@ const mainDivPaddingStyle = computed(() => {
                 :title="
                   isExportButtonDisabled
                     ? t('Please enter data to encode first')
-                    : `${t('Download QR Code as SVG')} (${t('Legacy')})`
+                    : `${t('Download QR Code as SVG')} (Legacy)`
                 "
-                :aria-label="`${t('Download QR Code as SVG')} (${t('Legacy')})`"
+                :aria-label="`${t('Download QR Code as SVG')} (Legacy)`"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                   <g fill="none" stroke="currentColor" stroke-width="2">
