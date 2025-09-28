@@ -683,7 +683,13 @@ function getClipPathId() {
   return `export-rounded-clip-${clipPathIdCounter}`
 }
 
-function applySvgOptions(svgDocument: Document, preparation: ExportPreparation) {
+type SvgOutputMode = 'modern' | 'legacy'
+
+function applySvgOptions(
+  svgDocument: Document,
+  preparation: ExportPreparation,
+  mode: SvgOutputMode = 'modern'
+) {
   const svgElement = svgDocument.documentElement
   const { width, height, sourceWidth, sourceHeight, sourceX, sourceY, options, clipRadii } =
     preparation
@@ -738,6 +744,11 @@ svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet')
 
   ;(svgElement.style as unknown as Record<string, string>).clipPath = ''
   ;(svgElement.style as unknown as Record<string, string>).webkitClipPath = ''
+
+  if (mode === 'legacy') {
+    svgElement.removeAttribute('clip-path')
+    return
+  }
 
   const hasRoundedCorner =
     clipRadii.topLeft > 0 ||
@@ -797,16 +808,25 @@ clipPath.appendChild(path)
  * - getSvgElement: returns data URL for downloads
  * - downloadSvgElement: triggers a file download
  */
+async function buildSvgString(
+  element: HTMLElement,
+  options: Options,
+  borderRadius: string | undefined,
+  mode: SvgOutputMode
+): Promise<string> {
+  const preparation = getExportPreparation(element, options, borderRadius)
+  const svgDocument = elementToSVG(element)
+  await inlineResources(svgDocument.documentElement)
+  applySvgOptions(svgDocument, preparation, mode)
+  return new XMLSerializer().serializeToString(svgDocument)
+}
+
 export async function getSvgString(
   element: HTMLElement,
   options: Options,
   borderRadius?: string
 ): Promise<string> {
-  const preparation = getExportPreparation(element, options, borderRadius)
-  const svgDocument = elementToSVG(element)
-  await inlineResources(svgDocument.documentElement)
-  applySvgOptions(svgDocument, preparation)
-  return new XMLSerializer().serializeToString(svgDocument)
+  return buildSvgString(element, options, borderRadius, 'modern')
 }
 
 export async function getSvgElement(
@@ -816,6 +836,23 @@ export async function getSvgElement(
 ): Promise<string> {
   const svgString = await getSvgString(element, options, borderRadius)
   // Convert SVG string to data URL
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
+}
+
+export async function getLegacySvgString(
+  element: HTMLElement,
+  options: Options,
+  borderRadius?: string
+): Promise<string> {
+  return buildSvgString(element, options, borderRadius, 'legacy')
+}
+
+export async function getLegacySvgElement(
+  element: HTMLElement,
+  options: Options,
+  borderRadius?: string
+): Promise<string> {
+  const svgString = await getLegacySvgString(element, options, borderRadius)
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`
 }
 
@@ -834,5 +871,23 @@ export function downloadSvgElement(
     })
     .catch((error: Error) => {
       console.error('Error converting element to SVG:', error)
+    })
+}
+
+export function downloadLegacySvgElement(
+  element: HTMLElement,
+  filename: string,
+  options: Options,
+  borderRadius?: string
+) {
+  getLegacySvgElement(element, options, borderRadius)
+    .then((dataUrl: string) => {
+      const link = document.createElement('a')
+      link.href = dataUrl
+      link.download = filename
+      link.click()
+    })
+    .catch((error: Error) => {
+      console.error('Error converting element to legacy SVG:', error)
     })
 }
