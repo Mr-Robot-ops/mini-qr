@@ -249,6 +249,8 @@ export const lyqhtPreset: Preset = {
   name: 'Default (lyqht)',
   data: 'https://github.com/lyqht',
   image: PLACEHOLDER_IMAGE_URL,
+  width: 500,
+  height: 500,
   dotsOptions: {
     color: '#abcbca',
     type: 'extra-rounded'
@@ -350,8 +352,7 @@ function parsePresetsFromEnv(envVal?: string): Preset[] | undefined {
 const envPresets = parsePresetsFromEnv(import.meta.env.VITE_QR_CODE_PRESETS)
 export const allQrCodePresets: Preset[] = envPresets ?? builtInPresets
 
-export const defaultPreset: Preset =
-  import.meta.env.VITE_DEFAULT_PRESET
-    ? allQrCodePresets.find((p) => p.name === import.meta.env.VITE_DEFAULT_PRESET) ??
-      allQrCodePresets[0]
-    : allQrCodePresets[0]
+export const defaultPreset: Preset = import.meta.env.VITE_DEFAULT_PRESET
+  ? (allQrCodePresets.find((p) => p.name === import.meta.env.VITE_DEFAULT_PRESET) ??
+    allQrCodePresets[0])
+  : allQrCodePresets[0]
