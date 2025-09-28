@@ -58,6 +58,11 @@ const normalizedMargin = computed(() => {
   return Number.isFinite(parsed) ? Math.max(parsed, 0) : 0
 })
 
+const MINIMUM_RENDER_MARGIN = 0.001
+const rendererMargin = computed(() =>
+  normalizedMargin.value > 0 ? normalizedMargin.value : MINIMUM_RENDER_MARGIN
+)
+
 const normalizedWidth = computed(() => {
   const parsed = Number(props.width)
   return Number.isFinite(parsed) ? Math.max(parsed, 0) : 0
@@ -75,7 +80,7 @@ const qrProps = computed<StyledQRCodeProps>(() => ({
   ...props,
   width: displayWidth.value,
   height: displayHeight.value,
-  margin: normalizedMargin.value,
+  margin: rendererMargin.value,
   image: props.image === null ? undefined : props.image
 }))
 
