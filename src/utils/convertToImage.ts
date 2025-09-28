@@ -893,16 +893,15 @@ export async function getLegacySvgString(
   const svgHeight = Math.max(1, Math.round(height))
   const mimeType = blob.type || 'image/png'
 
-  const sizeWidth = `${svgWidth}px`
-  const sizeHeight = `${svgHeight}px`
+  const sizeWidth = `${svgWidth}`
+  const sizeHeight = `${svgHeight}`
+  const dataUri = `data:${mimeType};base64,${base64Payload}`
 
   const svgParts = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="${sizeWidth}" height="${sizeHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet">`,
-    '  <defs>',
-    '    <style type="text/css"><![CDATA[image{image-rendering:optimizeSpeed;shape-rendering:crispEdges;}]]></style>',
-    '  </defs>',
-    `  <image x="0" y="0" width="${sizeWidth}" height="${sizeHeight}" preserveAspectRatio="none" image-rendering="optimizeSpeed" xlink:href="data:${mimeType};base64,${base64Payload}"></image>`,
+    `  <rect width="100%" height="100%" fill="transparent"/>`,
+    `  <image x="0" y="0" width="${sizeWidth}" height="${sizeHeight}" preserveAspectRatio="none" style="image-rendering:crisp-edges" href="${dataUri}" xlink:href="${dataUri}"/>`,
     '</svg>'
   ]
 
