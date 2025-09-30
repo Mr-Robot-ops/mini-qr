@@ -471,9 +471,15 @@ const paintBlobWithRoundedCorners = async (
     const image = new Image()
 
     image.onload = () => {
+      const targetWidth = Math.max(1, Math.round(width || image.naturalWidth || image.width || 0))
+      const targetHeight = Math.max(
+        1,
+        Math.round(height || image.naturalHeight || image.height || 0)
+      )
+
       const canvas = document.createElement('canvas')
-      canvas.width = width || image.naturalWidth || image.width
-      canvas.height = height || image.naturalHeight || image.height
+      canvas.width = targetWidth
+      canvas.height = targetHeight
 
       const context = canvas.getContext('2d')
       if (!context) {
@@ -482,11 +488,14 @@ const paintBlobWithRoundedCorners = async (
         return
       }
 
-      context.clearRect(0, 0, canvas.width, canvas.height)
-      drawRoundedRectPath(context, radii, canvas.width, canvas.height)
+      context.clearRect(0, 0, targetWidth, targetHeight)
+      context.imageSmoothingEnabled = true
+      context.imageSmoothingQuality = 'high'
+
+      drawRoundedRectPath(context, radii, targetWidth, targetHeight)
       context.save()
       context.clip()
-      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 0, 0, targetWidth, targetHeight)
       context.restore()
 
       const targetMime = mimeType ?? blob.type ?? 'image/png'
