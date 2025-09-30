@@ -14,10 +14,10 @@ const getFormattedOptions = (
 ): Options => {
   if (options.width && options.height) {
     const scale = Math.min(
-      options.width / element.offsetWidth,
-      options.height / element.offsetHeight
+      Number(options.width) / element.offsetWidth,
+      Number(options.height) / element.offsetHeight
     )
-    const radiusValue = borderRadius ? parseInt(borderRadius.replace('px', '')) : 48
+    const radiusValue = borderRadius ? parseInt(borderRadius.replace('px', ''), 10) : 48
     const scaledRadius = `${radiusValue / scale}px`
 
     return {
@@ -53,7 +53,7 @@ const applyRoundedCornersToCanvas = async (
         return
       }
 
-      const radius = borderRadius ? parseInt(borderRadius.replace('px', '')) : 48
+      const radius = borderRadius ? parseInt(borderRadius.replace('px', ''), 10) : 48
       // Draw rounded rectangle path
       context.beginPath()
       context.moveTo(radius, 0)
@@ -81,7 +81,7 @@ const applyRoundedCornersToCanvas = async (
 // SVG clipPath for rounded corners
 const applySvgRoundedCorners = (svgDocument: Document, options: Options, borderRadius?: string) => {
   const svgElement = svgDocument.documentElement
-  const radius = borderRadius ? parseInt(borderRadius.replace('px', '')) : 48
+  const radius = borderRadius ? parseInt(borderRadius.replace('px', ''), 10) : 48
 
   if (options.width) svgElement.setAttribute('width', options.width.toString())
   if (options.height) svgElement.setAttribute('height', options.height.toString())
