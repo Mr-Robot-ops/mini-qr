@@ -44,36 +44,73 @@ const applyRoundedCornersToCanvas = async (
   return new Promise((resolve, reject) => {
     const image = new Image()
     image.onload = () => {
+      const naturalWidth = image.naturalWidth || image.width
+      const naturalHeight = image.naturalHeight || image.height
+      const canvasWidthCandidate = Number.isFinite(width) && width > 0 ? width : naturalWidth
+      const canvasHeightCandidate = Number.isFinite(height) && height > 0 ? height : naturalHeight
+      const canvasWidth =
+        canvasWidthCandidate && canvasWidthCandidate > 0 ? canvasWidthCandidate : naturalWidth || 1
+      const canvasHeight =
+        canvasHeightCandidate && canvasHeightCandidate > 0
+          ? canvasHeightCandidate
+          : naturalHeight || 1
+
       const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
+      canvas.width = canvasWidth
+      canvas.height = canvasHeight
       const context = canvas.getContext('2d')
       if (!context) {
         reject(new Error('Failed to get canvas context'))
         return
       }
 
+      context.imageSmoothingEnabled = false
+      context.clearRect(0, 0, canvasWidth, canvasHeight)
+
       const radius = borderRadius ? parseInt(borderRadius.replace('px', '')) : 48
+      const baseWidthCandidate = Number.isFinite(width) && width > 0 ? width : canvasWidth
+      const baseHeightCandidate = Number.isFinite(height) && height > 0 ? height : canvasHeight
+      const baseWidth = baseWidthCandidate > 0 ? baseWidthCandidate : canvasWidth
+      const baseHeight = baseHeightCandidate > 0 ? baseHeightCandidate : canvasHeight
+      const radiusScaleX = baseWidth > 0 ? canvasWidth / baseWidth : 1
+      const radiusScaleY = baseHeight > 0 ? canvasHeight / baseHeight : 1
+      const radiusScale = Math.min(radiusScaleX, radiusScaleY)
+      const scaledRadius =
+        Number.isFinite(radiusScale) && radiusScale > 0 ? radius * radiusScale : radius
       // Draw rounded rectangle path
       context.beginPath()
-      context.moveTo(radius, 0)
-      context.lineTo(width - radius, 0)
-      context.arcTo(width, 0, width, radius, radius)
-      context.lineTo(width, height - radius)
-      context.arcTo(width, height, width - radius, height, radius)
-      context.lineTo(radius, height)
-      context.arcTo(0, height, 0, height - radius, radius)
-      context.lineTo(0, radius)
-      context.arcTo(0, 0, radius, 0, radius)
+      context.moveTo(scaledRadius, 0)
+      context.lineTo(canvasWidth - scaledRadius, 0)
+      context.arcTo(canvasWidth, 0, canvasWidth, scaledRadius, scaledRadius)
+      context.lineTo(canvasWidth, canvasHeight - scaledRadius)
+      context.arcTo(
+        canvasWidth,
+        canvasHeight,
+        canvasWidth - scaledRadius,
+        canvasHeight,
+        scaledRadius
+      )
+      context.lineTo(scaledRadius, canvasHeight)
+      context.arcTo(0, canvasHeight, 0, canvasHeight - scaledRadius, scaledRadius)
+      context.lineTo(0, scaledRadius)
+      context.arcTo(0, 0, scaledRadius, 0, scaledRadius)
       context.closePath()
       context.clip()
-      context.drawImage(image, 0, 0, width, height)
+      context.drawImage(image, 0, 0, canvasWidth, canvasHeight)
 
       canvas.toBlob((roundedBlob) => {
-        roundedBlob ? resolve(roundedBlob) : reject(new Error('Failed to create rounded blob'))
+        if (roundedBlob) {
+          resolve(roundedBlob)
+        } else {
+          reject(new Error('Failed to create rounded blob'))
+        }
       }, blob.type)
+      URL.revokeObjectURL(image.src)
     }
-    image.onerror = () => reject(new Error('Failed to load image'))
+    image.onerror = () => {
+      URL.revokeObjectURL(image.src)
+      reject(new Error('Failed to load image'))
+    }
     image.src = URL.createObjectURL(blob)
   })
 }
